@@ -236,15 +236,36 @@ export default function Home() {
           </ul>
         </div>
 
-        {/* 联系信息 */}
-        <div className="max-w-2xl mx-auto mt-6 p-4 bg-gray-50 rounded-lg text-center">
-          <p className="text-gray-600 mb-2">需要完整版或定制服务？</p>
-          <button 
-            onClick={() => alert('请添加微信：YourWeChatID 或发送邮件：your@email.com')}
-            className="bg-green-500 hover:bg-green-600 text-white py-2 px-6 rounded-lg font-medium transition-colors duration-200"
-          >
-            📱 联系获取完整版
-          </button>
+        {/* 联系信息 - 已更新为抖音和邮箱 */}
+        <div className="max-w-2xl mx-auto mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 text-center">
+          <p className="text-gray-600 mb-3">需要完整版或定制服务？</p>
+          <div className="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <button 
+              onClick={() => alert('请关注抖音账号：@your_douyin_account\n\n我们会通过抖音回复您的咨询和订单！')}
+              className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white py-2 px-6 rounded-lg font-medium transition-all duration-200 flex items-center"
+            >
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743l-.002-.001.002.001a2.895 2.895 0 0 1 3.183-4.51v-3.5a6.329 6.329 0 0 0-5.394 10.692 6.33 6.33 0 0 0 10.857-4.424V8.687a8.182 8.182 0 0 0 4.773 1.526V6.79a4.831 4.831 0 0 1-1.003-.104z"/>
+              </svg>
+              关注抖音
+            </button>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText('your-email@example.com');
+                alert('邮箱地址已复制到剪贴板：your-email@example.com\n\n请通过邮箱联系我们！');
+              }}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-2 px-6 rounded-lg font-medium transition-all duration-200 flex items-center"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              复制邮箱
+            </button>
+          </div>
+          <div className="mt-3 text-xs text-gray-500">
+            <p>📧 邮箱：qiaozhi242@gmail.com</p>
+            <p>🎵 抖音：@qiaozhi242</p>
+          </div>
         </div>
       </div>
 
