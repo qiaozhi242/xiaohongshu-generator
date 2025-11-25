@@ -9,10 +9,15 @@ export default function Home() {
   const [style, setStyle] = useState('活泼');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
+  const [copySuccess, setCopySuccess] = useState('');
+  const [generationTime, setGenerationTime] = useState(0);
+  const [isFirstGeneration, setIsFirstGeneration] = useState(true);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setCopySuccess('');
+    const startTime = Date.now();
     
     try {
       const response = await fetch('/api/generate', {
@@ -28,12 +33,31 @@ export default function Home() {
       });
       
       const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || '生成失败');
+      }
+      
+      const endTime = Date.now();
+      setGenerationTime(Math.round((endTime - startTime) / 100) / 10);
       setResult(data.text);
+      setIsFirstGeneration(false);
+      
     } catch (error) {
       console.error('生成失败:', error);
-      setResult('生成失败，请重试！');
+      setResult(`❌ ${error.message}\n\n请检查网络连接或稍后重试。`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(result);
+      setCopySuccess('✅ 文案已复制到剪贴板！');
+      setTimeout(() => setCopySuccess(''), 3000);
+    } catch (err) {
+      setCopySuccess('❌ 复制失败，请手动复制');
     }
   };
 
@@ -110,19 +134,82 @@ export default function Home() {
           </button>
         </form>
 
+        {isFirstGeneration && (
+          <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
+            <h4 className="font-semibold text-purple-800 mb-3">🎯 试试这些热门示例：</h4>
+            <div className="space-y-2 text-sm">
+              <button 
+                type="button"
+                onClick={() => {
+                  setProductName('便携式咖啡杯');
+                  setSellingPoint('一键保温保冷,24小时长效保温,超高颜值设计');
+                  setStyle('活泼');
+                }}
+                className="block w-full text-left p-3 bg-white rounded-lg border border-purple-100 hover:border-purple-300 transition-colors"
+              >
+                <span className="font-medium text-purple-700">☕ 便携式咖啡杯</span>
+                <br />
+                <span className="text-purple-600">一键保温保冷, 24小时长效保温, 超高颜值设计</span>
+              </button>
+              
+              <button 
+                type="button"
+                onClick={() => {
+                  setProductName('美白精华液');
+                  setSellingPoint('28天见证美白效果,温和不刺激,清爽易吸收');
+                  setStyle('专业');
+                }}
+                className="block w-full text-left p-3 bg-white rounded-lg border border-purple-100 hover:border-purple-300 transition-colors"
+              >
+                <span className="font-medium text-purple-700">💆 美白精华液</span>
+                <br />
+                <span className="text-purple-600">28天见证美白效果, 温和不刺激, 清爽易吸收</span>
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => {
+                  setProductName('智能空气炸锅');
+                  setSellingPoint('无油健康烹饪,智能控温,自动断电保护');
+                  setStyle('搞笑');
+                }}
+                className="block w-full text-left p-3 bg-white rounded-lg border border-purple-100 hover:border-purple-300 transition-colors"
+              >
+                <span className="font-medium text-purple-700">🍟 智能空气炸锅</span>
+                <br />
+                <span className="text-purple-600">无油健康烹饪, 智能控温, 自动断电保护</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {result && (
           <div className="mt-8 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-800">✨ 为您生成的文案：</h3>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(result);
-                  alert('文案已复制到剪贴板！');
-                }}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200"
-              >
-                📋 复制文案
-              </button>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800">✨ AI为您生成的文案</h3>
+                {generationTime > 0 && (
+                  <p className="text-sm text-gray-500">
+                    生成耗时: {generationTime}秒 • 
+                    风格: {style} • 
+                    {isFirstGeneration ? ' 首次体验' : ' 再次生成'}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
+                {copySuccess && (
+                  <span className="text-green-600 text-sm font-medium">{copySuccess}</span>
+                )}
+                <button
+                  onClick={copyToClipboard}
+                  className="bg-pink-500 hover:bg-pink-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  复制文案
+                </button>
+              </div>
             </div>
             <div className="bg-white p-6 rounded-lg border border-gray-300">
               <pre className="whitespace-pre-wrap text-gray-700 font-sans leading-relaxed">
@@ -132,11 +219,33 @@ export default function Home() {
             
             <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
               <p className="text-sm text-yellow-800">
-                💡 <strong>使用提示：</strong>复制上面的文案到小红书，根据实际情况微调即可发布！
+                💡 <strong>使用提示：</strong>点击"复制文案"按钮将内容复制到剪贴板，然后粘贴到小红书即可发布！
               </p>
             </div>
           </div>
         )}
+
+        {/* 使用说明 */}
+        <div className="max-w-2xl mx-auto mt-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+          <h3 className="text-lg font-semibold text-blue-800 mb-3">💡 使用技巧</h3>
+          <ul className="text-sm text-blue-700 list-disc list-inside space-y-1">
+            <li><strong>产品名称</strong>要具体，如"便携咖啡杯"而不是"杯子"</li>
+            <li><strong>核心卖点</strong>用逗号分隔，如"保温24小时,一键操作,便携设计"</li>
+            <li>生成后可根据实际情况微调文案内容</li>
+            <li>搭配精美产品图片效果更佳！</li>
+          </ul>
+        </div>
+
+        {/* 联系信息 */}
+        <div className="max-w-2xl mx-auto mt-6 p-4 bg-gray-50 rounded-lg text-center">
+          <p className="text-gray-600 mb-2">需要完整版或定制服务？</p>
+          <button 
+            onClick={() => alert('请添加微信：YourWeChatID 或发送邮件：your@email.com')}
+            className="bg-green-500 hover:bg-green-600 text-white py-2 px-6 rounded-lg font-medium transition-colors duration-200"
+          >
+            📱 联系获取完整版
+          </button>
+        </div>
       </div>
 
       <div className="max-w-2xl mx-auto mt-8 text-center text-gray-500 text-sm">
