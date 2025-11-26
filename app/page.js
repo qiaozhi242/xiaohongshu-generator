@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import UserMenu from '../components/UserMenu';
 
 export default function Home() {
   const [productName, setProductName] = useState('');
@@ -13,29 +12,12 @@ export default function Home() {
   const [copySuccess, setCopySuccess] = useState('');
   const [generationTime, setGenerationTime] = useState(0);
   const [isFirstGeneration, setIsFirstGeneration] = useState(true);
-  const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
   const [apiStatus, setApiStatus] = useState('checking'); // 'checking', 'configured', 'missing', 'error'
 
-  // 检查用户登录状态和API状态
+  // 检查API状态
   useEffect(() => {
-    checkAuthStatus();
     checkApiStatus();
   }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      const response = await fetch('/api/auth/me');
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-      }
-    } catch (error) {
-      console.error('检查认证状态失败:', error);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
 
   // 检查API状态
   const checkApiStatus = async () => {
@@ -56,13 +38,6 @@ export default function Home() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // 检查是否已登录
-    if (!user) {
-      alert('请先登录后再使用文案生成功能！');
-      window.location.href = '/auth/login';
-      return;
-    }
-
     // 检查API状态
     if (apiStatus === 'missing') {
       alert('AI服务暂不可用，请联系管理员配置API密钥');
@@ -142,99 +117,46 @@ export default function Home() {
               🎯 小红书文案生成器
             </h1>
           </div>
-          <UserMenu />
         </div>
       </div>
 
       {/* 主要内容 */}
       <div className="max-w-2xl mx-auto">
         {/* API状态提示 */}
-        {user && (
-          <div className={`mb-4 p-3 rounded-lg text-sm ${
-            apiStatus === 'configured' 
-              ? 'bg-green-50 text-green-700 border border-green-200' 
-              : apiStatus === 'missing'
-              ? 'bg-red-50 text-red-700 border border-red-200'
-              : apiStatus === 'error'
-              ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-              : 'bg-blue-50 text-blue-700 border border-blue-200'
-          }`}>
-            {apiStatus === 'configured' && (
-              <div className="flex items-center">
-                <span className="mr-2">✅</span>
-                <span>AI服务已就绪，可以开始生成文案</span>
-              </div>
-            )}
-            {apiStatus === 'missing' && (
-              <div className="flex items-center">
-                <span className="mr-2">❌</span>
-                <span>AI服务未配置，请联系管理员设置DeepSeek API密钥</span>
-              </div>
-            )}
-            {apiStatus === 'error' && (
-              <div className="flex items-center">
-                <span className="mr-2">⚠️</span>
-                <span>无法检查AI服务状态，请刷新页面重试</span>
-              </div>
-            )}
-            {apiStatus === 'checking' && (
-              <div className="flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2"></div>
-                <span>检查AI服务状态中...</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 欢迎信息 */}
-        {user && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 mb-8 shadow-sm border border-white/20">
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">
-              欢迎回来，{user.email}！ 👋
-            </h2>
-            <p className="text-gray-600">
-              您已使用本工具生成了 <span className="font-bold text-pink-600">{user.usageCount || 0}</span> 篇文案
-              {user.role === 'admin' && ' · 管理员权限'}
-            </p>
-          </div>
-        )}
-
-        {/* 未登录提示 */}
-        {!user && !authLoading && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-8">
+        <div className={`mb-4 p-3 rounded-lg text-sm ${
+          apiStatus === 'configured' 
+            ? 'bg-green-50 text-green-700 border border-green-200' 
+            : apiStatus === 'missing'
+            ? 'bg-red-50 text-red-700 border border-red-200'
+            : apiStatus === 'error'
+            ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+            : 'bg-blue-50 text-blue-700 border border-blue-200'
+        }`}>
+          {apiStatus === 'configured' && (
             <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-yellow-800">
-                  需要登录
-                </h3>
-                <div className="mt-2 text-sm text-yellow-700">
-                  <p>
-                    请先登录或注册账号以使用文案生成功能。需要邀请码才能注册。
-                  </p>
-                </div>
-                <div className="mt-3 flex space-x-3">
-                  <a
-                    href="/auth/login"
-                    className="px-4 py-2 text-sm font-medium text-yellow-800 bg-yellow-100 border border-yellow-200 rounded-lg hover:bg-yellow-200 transition-colors"
-                  >
-                    立即登录
-                  </a>
-                  <a
-                    href="/auth/register"
-                    className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 border border-yellow-700 rounded-lg hover:bg-yellow-700 transition-colors"
-                  >
-                    注册账号
-                  </a>
-                </div>
-              </div>
+              <span className="mr-2">✅</span>
+              <span>AI服务已就绪，可以开始生成文案</span>
             </div>
-          </div>
-        )}
+          )}
+          {apiStatus === 'missing' && (
+            <div className="flex items-center">
+              <span className="mr-2">❌</span>
+              <span>AI服务未配置，请联系管理员设置DeepSeek API密钥</span>
+            </div>
+          )}
+          {apiStatus === 'error' && (
+            <div className="flex items-center">
+              <span className="mr-2">⚠️</span>
+              <span>无法检查AI服务状态，请刷新页面重试</span>
+            </div>
+          )}
+          {apiStatus === 'checking' && (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2"></div>
+              <span>检查AI服务状态中...</span>
+            </div>
+          )}
+        </div>
 
         {/* 生成器表单 */}
         <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
@@ -259,7 +181,7 @@ export default function Home() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                 placeholder="例如：便携式咖啡杯、美白精华液、网红零食..."
                 required
-                disabled={!user || apiStatus === 'missing'}
+                disabled={apiStatus === 'missing'}
               />
             </div>
 
@@ -274,7 +196,7 @@ export default function Home() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                 placeholder="例如：一键保温保冷、24小时长效保湿、口感酥脆不油腻..."
                 required
-                disabled={!user || apiStatus === 'missing'}
+                disabled={apiStatus === 'missing'}
               />
             </div>
 
@@ -286,7 +208,7 @@ export default function Home() {
                 value={style}
                 onChange={(e) => setStyle(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                disabled={!user || apiStatus === 'missing'}
+                disabled={apiStatus === 'missing'}
               >
                 <option value="活泼">🎉 活泼可爱型</option>
                 <option value="专业">📊 专业测评型</option>
@@ -297,12 +219,10 @@ export default function Home() {
 
             <button
               type="submit"
-              disabled={loading || !user || apiStatus === 'missing' || apiStatus === 'checking'}
+              disabled={loading || apiStatus === 'missing' || apiStatus === 'checking'}
               className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-pink-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
-              {!user ? (
-                '请先登录'
-              ) : apiStatus === 'missing' ? (
+              {apiStatus === 'missing' ? (
                 '❌ AI服务未配置'
               ) : apiStatus === 'checking' ? (
                 '检查AI服务中...'
@@ -317,7 +237,7 @@ export default function Home() {
             </button>
           </form>
 
-          {isFirstGeneration && user && apiStatus === 'configured' && (
+          {isFirstGeneration && apiStatus === 'configured' && (
             <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
               <h4 className="font-semibold text-purple-800 mb-3">🎯 试试这些热门示例：</h4>
               <div className="space-y-2 text-sm">
