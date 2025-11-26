@@ -1,16 +1,7 @@
 [build]
-  command = "npm run build"
+  command = "CI= npm run build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "18"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/api/*"
-  to = "/api/:splat"
-  status = 200
+  NODE_OPTIONS = "--max_old_space_size=4096"
