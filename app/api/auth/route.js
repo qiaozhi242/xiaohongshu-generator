@@ -2,67 +2,51 @@
 import { NextResponse } from 'next/server';
 import { createToken } from '@/lib/auth';
 
-// 使用与注册API相同的内存数据库实例
-let memoryUsers = [];
-let nextId = 1;
-
-const memoryDB = {
-  users: {
-    findOne: async (query) => {
-      if (query.email) {
-        const user = memoryUsers.find(user => user.email === query.email);
-        console.log('🔍 内存数据库查找用户:', query.email, '找到:', !!user);
-        return user || null;
-      }
-      return null;
-    },
-    updateOne: async (filter, update) => {
-      const userIndex = memoryUsers.findIndex(user => user.email === filter.email);
-      if (userIndex !== -1) {
-        if (update.$set) {
-          memoryUsers[userIndex] = { ...memoryUsers[userIndex], ...update.$set };
-        }
-        if (update.$inc && update.$inc.usageCount) {
-          memoryUsers[userIndex].usageCount = (memoryUsers[userIndex].usageCount || 0) + 1;
-        }
-        console.log('📝 更新内存用户:', filter.email);
-        return { modifiedCount: 1 };
-      }
-      return { modifiedCount: 0 };
-    }
-  }
-};
+// 移除内存数据库相关代码，强制使用MongoDB
 
 // 简化的数据库连接函数
 async function getDatabase() {
+  // 检查是否有 MongoDB 环境变量
+  if (!process.env.MONGODB_URI) {
+    console.error('❌ MONGODB_URI 环境变量未设置');
+    throw new Error('数据库配置错误：MONGODB_URI 环境变量未设置');
+  }
+  
   try {
-    // 检查是否有 MongoDB 环境变量
-    if (!process.env.MONGODB_URI) {
-      console.log('⚠️ 未找到 MONGODB_URI，使用内存数据库');
-      return memoryDB;
-    }
-    
     // 动态导入 MongoDB 相关模块
     const { MongoClient } = await import('mongodb');
     
+    console.log('🔗 尝试连接到 MongoDB...');
     const client = new MongoClient(process.env.MONGODB_URI);
     await client.connect();
     const db = client.db();
     
+    // 测试连接是否正常
+    await db.command({ ping: 1 });
     console.log('✅ 成功连接到 MongoDB 数据库');
+    
     return {
       users: {
         findOne: (query) => db.collection('users').findOne(query),
-        updateOne: (filter, update) => db.collection('users').updateOne(filter, update)
-      }
+        updateOne: (filter, update) => db.collection('users').updateOne(filter, update),
+        insertOne: (document) => db.collection('users').insertOne(document) // 添加insertOne方法
+      },
+      client: client // 返回client用于后续关闭连接
     };
   } catch (error) {
-    console.log('❌ MongoDB 连接失败，使用内存数据库:', error.message);
-    return memoryDB;
+    console.error('❌ MongoDB 连接失败:', error.message);
+    console.error('连接详情:', {
+      hasUri: !!process.env.MONGODB_URI,
+      uriLength: process.env.MONGODB_URI?.length,
+      error: error.message
+    });
+    throw new Error(`数据库连接失败: ${error.message}`);
   }
 }
 
 export async function POST(request) {
+  let client; // 用于在finally中关闭连接
+  
   try {
     // 解析请求数据
     let requestBody;
@@ -88,6 +72,7 @@ export async function POST(request) {
 
     // 获取数据库连接
     const db = await getDatabase();
+    client = db.client; // 保存client引用
     
     if (!db || !db.users) {
       console.error('❌ 数据库连接失败，db 对象无效');
@@ -176,16 +161,40 @@ export async function POST(request) {
       },
       { status: 500 }
     );
+  } finally {
+    // 关闭数据库连接
+    if (client) {
+      await client.close();
+    }
   }
 }
 
 // 添加调试端点
 export async function GET() {
-  const db = await getDatabase();
-  return NextResponse.json({
-    message: '登录API工作正常',
-    databaseType: db === memoryDB ? '内存数据库' : 'MongoDB',
-    memoryUserCount: memoryUsers.length,
-    timestamp: new Date().toISOString()
-  });
+  try {
+    const db = await getDatabase();
+    return NextResponse.json({
+      message: '登录API工作正常',
+      databaseType: 'MongoDB',
+      timestamp: new Date().toISOString(),
+      environment: {
+        hasMongoDBUri: !!process.env.MONGODB_URI,
+        nodeEnv: process.env.NODE_ENV,
+        // 显示URI的前几个字符用于调试（不暴露完整密码）
+        uriPreview: process.env.MONGODB_URI ? 
+          process.env.MONGODB_URI.substring(0, 30) + '...' : '未设置'
+      }
+    });
+  } catch (error) {
+    return NextResponse.json({
+      message: '数据库连接失败',
+      databaseType: '连接错误',
+      error: error.message,
+      timestamp: new Date().toISOString(),
+      environment: {
+        hasMongoDBUri: !!process.env.MONGODB_URI,
+        nodeEnv: process.env.NODE_ENV
+      }
+    }, { status: 500 });
+  }
 }
